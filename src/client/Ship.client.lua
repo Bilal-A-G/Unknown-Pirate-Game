@@ -1,4 +1,4 @@
-local captainEvent = game.ReplicatedStorage:WaitForChild("Common").CaptainShip
+local captainEvent = game.ReplicatedStorage:WaitForChild("Events").CaptainShip
 local ships = game.Workspace
 local player = game.Players.LocalPlayer
 local character = player.Character
