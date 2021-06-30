@@ -1,5 +1,5 @@
 local shipEvent = game.ReplicatedStorage:WaitForChild("Events").CaptainShip
-local shipInfo = require(game.ReplicatedStorage:WaitForChild("Modules").Ship)
+local shipInfo = require(game.ReplicatedStorage:WaitForChild("Common").Ship)
 
 shipEvent.OnServerEvent:Connect(function(player, request, ship, input)
 	if request == "SetCaptain" then

@@ -1,7 +1,7 @@
 local players = game:GetService("Players")
 
 local playerProfiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
-local prices = require(game.ReplicatedStorage:WaitForChild("Modules").Prices)
+local prices = require(game.ReplicatedStorage:WaitForChild("Common").Prices)
 
 players.PlayerAdded:Connect(function(player)
 	local profile = Instance.new("Folder", playerProfiles)

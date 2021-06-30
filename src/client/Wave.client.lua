@@ -14,7 +14,6 @@ local function FindWaveHeights(point)
 
     local w = 2/wavelength
     local phaseConstant = speed * w
-    print(clock:GetTime())
 
     return amplitude * math.sin(windDirection:Dot(point) * w + clock:GetTime() * phaseConstant)
 end
@@ -23,7 +22,7 @@ runService.Stepped:Connect(function()
      for i,v in pairs(oceanBones) do
         if v:IsA("Bone") then
             local boneHeight = FindWaveHeights(Vector2.new(v.Position.X, v.Position.Z))
-            v.Position = Vector3.new(v.Position.X, boneHeight, v.Position.Z) 
+            v.Position = Vector3.new(v.Position.X, boneHeight, v.Position.Z)
         end
      end   
 end)

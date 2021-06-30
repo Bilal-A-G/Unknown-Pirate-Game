@@ -1,7 +1,7 @@
 local playerProfiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
 local boyancy = game.ReplicatedStorage:WaitForChild("Events").Boyancy
 local ships = game.ReplicatedStorage:WaitForChild("Ships")
-local shipInfo = require(game.ReplicatedStorage:WaitForChild("Modules").Ship)
+local shipInfo = require(game.ReplicatedStorage:WaitForChild("Common").Ship)
 local economyInformation = {}
 
 economyInformation.Prices = {

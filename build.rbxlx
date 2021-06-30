@@ -25902,6 +25902,7 @@ local function FindWaveHeights(point)
 
     local w = 2/wavelength
     local phaseConstant = speed * w
+    print(clock:GetTime())
 
     return amplitude * math.sin(windDirection:Dot(point) * w + clock:GetTime() * phaseConstant)
 end
@@ -25910,7 +25911,7 @@ runService.Stepped:Connect(function()
      for i,v in pairs(oceanBones) do
         if v:IsA("Bone") then
             local boneHeight = FindWaveHeights(Vector2.new(v.Position.X, v.Position.Z))
-            v.Position = Vector3.new(v.Position.X, v.Position.Y + boneHeight, v.Position.Z) 
+            v.Position = Vector3.new(v.Position.X, boneHeight, v.Position.Z) 
         end
      end   
 end)]]></ProtectedString>
@@ -26112,7 +26113,40 @@ end)]]></ProtectedString>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">Economy</string>
 					<string name="ScriptGuid">{E753A227-56B3-4BD5-BF2E-3B2D83FE7A9F}</string>
-					<ProtectedString name="Source"></ProtectedString>
+					<ProtectedString name="Source"><![CDATA[local buyingSpawning = game.ReplicatedStorage:WaitForChild("Events").BuyingSpawning
+local sellingDeleting = game.ReplicatedStorage:WaitForChild("Events").SellingDeleting
+local playerProfiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
+local prices = require(game.ReplicatedStorage:WaitForChild("Modules").Prices)
+
+buyingSpawning.OnServerEvent:Connect(function(player, item, region)
+	local itemPrice = prices["Prices"][item]
+	if item ~= "TestShip" then
+		itemPrice = itemPrice + prices["Regions"][region][item]
+	end
+	local transaction = false
+	if itemPrice then
+		transaction = prices.SubtractMoney(player, itemPrice)
+	end
+	if transaction == true then
+		prices.GiveItem(player, item)
+	end
+end)
+
+sellingDeleting.OnServerEvent:Connect(function(player, item, region)
+	if item ~= "TestShip" then
+		print("Got event")
+		local itemPrice = prices["Prices"][item]
+		local regionalModifier = prices["Regions"][region][item]
+		local totalPrice = itemPrice + regionalModifier - ((itemPrice + regionalModifier) * 0.1)
+		local transaction = false
+		if totalPrice then
+			transaction = prices.RemoveItem(player, item)
+		end
+		if transaction == true then
+			prices.GiveMoney(player, totalPrice)
+		end
+	end
+end)]]></ProtectedString>
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
@@ -26124,7 +26158,37 @@ end)]]></ProtectedString>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">PlayerSpawned</string>
 					<string name="ScriptGuid">{B963FFD7-845D-48BA-8A85-AB424090BB2A}</string>
-					<ProtectedString name="Source"></ProtectedString>
+					<ProtectedString name="Source"><![CDATA[local players = game:GetService("Players")
+
+local playerProfiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
+local prices = require(game.ReplicatedStorage:WaitForChild("Modules").Prices)
+
+players.PlayerAdded:Connect(function(player)
+	local profile = Instance.new("Folder", playerProfiles)
+	profile.Name = player.UserId
+	local doubloons = Instance.new("IntValue", profile)
+	doubloons.Value = 1500
+	doubloons.Name = "Doubloons"
+	local backpack = Instance.new("Folder", profile)
+	backpack.Name = "Backpack"
+	local ship = Instance.new("StringValue", profile)
+	ship.Name = "Ship"
+	ship.Value = "None"
+	local usingShip = Instance.new("BoolValue", ship)
+	usingShip.Name = "Using"
+	for i,v in pairs(prices["Prices"]) do
+		local intValue = Instance.new("IntValue", backpack)
+		intValue.Name = i
+		intValue.Value = 0
+	end
+end)
+
+players.PlayerRemoving:Connect(function(player)
+	if playerProfiles:FindFirstChild(player.UserId) then
+		playerProfiles:FindFirstChild(player.UserId):Destroy()
+	end
+end)
+]]></ProtectedString>
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
@@ -26136,7 +26200,20 @@ end)]]></ProtectedString>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">Ship</string>
 					<string name="ScriptGuid">{6D2F682F-F73A-4581-9CF6-F107D35E8381}</string>
-					<ProtectedString name="Source"></ProtectedString>
+					<ProtectedString name="Source"><![CDATA[local shipEvent = game.ReplicatedStorage:WaitForChild("Events").CaptainShip
+local shipInfo = require(game.ReplicatedStorage:WaitForChild("Modules").Ship)
+
+shipEvent.OnServerEvent:Connect(function(player, request, ship, input)
+	if request == "SetCaptain" then
+		local pass = shipInfo.ValidateCaptain(player, ship)
+		if pass then
+			shipInfo.FreezePlayer(player, true)
+		end
+	elseif request == "ControlShip" then
+		shipInfo.ControlShip(ship, input)
+	end
+end)
+]]></ProtectedString>
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
@@ -26194,7 +26271,104 @@ end)]]></ProtectedString>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">Prices</string>
 					<string name="ScriptGuid">{5C880469-810A-4379-B67C-877BAC3A006C}</string>
-					<ProtectedString name="Source"></ProtectedString>
+					<ProtectedString name="Source"><![CDATA[local playerProfiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
+local boyancy = game.ReplicatedStorage:WaitForChild("Events").Boyancy
+local ships = game.ReplicatedStorage:WaitForChild("Ships")
+local shipInfo = require(game.ReplicatedStorage:WaitForChild("Modules").Ship)
+local economyInformation = {}
+
+economyInformation.Prices = {
+
+	TestShip = 1000,
+	GrapeJuice = 300,
+	Sugar = 15,
+	Tea = 215,
+
+}
+
+economyInformation.Regions = {
+	
+	StartPort = {
+		
+		Sugar = -10,
+		GrapeJuice = -100,
+		Tea = 85,
+		
+	},
+	
+	MiddlePort = {
+
+		Sugar = 15,
+		GrapeJuice = -200,
+		Tea = -165,
+
+	},
+	
+	EndPort = {
+		
+		Sugar = -5,
+		GrapeJuice = 300,
+		Tea = -115,
+		
+	},
+	
+}
+
+function economyInformation.GiveMoney(player, amount)
+	local playerProfile = playerProfiles:FindFirstChild(player.UserId)
+	if playerProfile then
+		local doubloons = playerProfile.Doubloons
+		doubloons.Value = doubloons.Value + amount
+	end
+end
+
+function economyInformation.SubtractMoney(player, amount)
+	local playerProfile = playerProfiles:FindFirstChild(player.UserId)
+	if playerProfile then
+		local doubloons = playerProfile.Doubloons
+		if doubloons.Value >= amount then
+			doubloons.Value = doubloons.Value - amount
+			return true
+		end
+	end
+	return false
+end
+
+function economyInformation.GiveItem(player, item)
+	local playerProfile = playerProfiles:FindFirstChild(player.UserId)
+	if playerProfile then
+		local backpack = playerProfile.Backpack
+		local backpackItem = backpack:FindFirstChild(item)
+		if backpackItem then
+			backpackItem.Value = backpackItem.Value + 1
+		end
+		if item == "TestShip" then
+			local shipClone = ships.TestShip:Clone()
+			shipClone.Parent = game.Workspace
+			shipClone.Name = shipClone.Variables.ShipName.Value .. " " .. player.UserId
+			playerProfile.Ship.Value = shipClone.Name
+			shipInfo.CreateBodyMovers(shipClone)
+			boyancy:Fire(shipClone, "Ship")
+		end
+	end
+end
+
+function economyInformation.RemoveItem(player, item)
+	local playerProfile = playerProfiles:FindFirstChild(player.UserId)
+	if playerProfile then
+		local backpack = playerProfile.Backpack
+		for i,v in pairs(backpack:GetChildren()) do
+			if v.Name == item and v.Value > 0 then
+				v.Value = v.Value - 1
+				return true
+			else
+				return false
+			end
+		end
+	end
+end
+
+return economyInformation]]></ProtectedString>
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
@@ -26205,7 +26379,82 @@ end)]]></ProtectedString>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">Ship</string>
 					<string name="ScriptGuid">{6C6F7F2E-4EAE-41DB-B7B7-8273ACB3A1B6}</string>
-					<ProtectedString name="Source"></ProtectedString>
+					<ProtectedString name="Source"><![CDATA[local shipInfo = {}
+local playerprofiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
+
+function shipInfo.ValidateCaptain(player, ship)
+	local helm = ship:FindFirstChild("Helm")
+	local variables = ship.Variables
+	local captainId = variables.CaptainId
+	if (helm.Position - player.Character.RightFoot.Position).Magnitude <= 6 and captainId.Value == 0 then
+		captainId.Value = player.UserId
+		playerprofiles:FindFirstChild(player.UserId).Ship.Using.Value = true
+		return true
+	else
+		return false
+	end
+end
+
+function shipInfo.CreateBodyMovers(ship)
+	local ballast = ship:FindFirstChild("Ballast")
+	
+	local shipScript = script.ShipMoving:Clone()
+	shipScript.Parent = ship
+	
+	local bodyPosition = Instance.new("BodyPosition", ballast)
+	bodyPosition.Name = "ShipPosition"
+	bodyPosition.MaxForce = Vector3.new(math.huge, 0, 0)
+	bodyPosition.Position = ballast.Position
+
+	local bodyGyro = Instance.new("BodyGyro", ballast)
+	bodyGyro.Name = "ShipGyro"
+	bodyGyro.MaxTorque = Vector3.new(0, math.huge, 0)
+	bodyGyro.CFrame = ballast.CFrame
+end
+
+function shipInfo.ControlShip(ship, input)
+	local ballast = ship:FindFirstChild("Ballast")
+	local variables = ship.Variables
+	
+	local bodyPosition = ballast.ShipPosition
+	local bodyGyro = ballast.ShipGyro
+	local forwardsForce = variables.Speed
+	local rotationForce = variables.CurrentTurning
+	
+	if input == Enum.KeyCode.W then
+		if forwardsForce.Value < variables.MaxSpeed.Value then
+			forwardsForce.Value = forwardsForce.Value + variables.SpeedIncrement.Value
+		end
+	elseif input == Enum.KeyCode.S then
+		if forwardsForce.Value > -variables.MaxSpeed.Value then
+			forwardsForce.Value = forwardsForce.Value - variables.SpeedIncrement.Value
+		end
+	elseif input == Enum.KeyCode.A then
+		if rotationForce.Value < variables.MaxTurning.Value then
+			rotationForce.Value = rotationForce.Value + variables.TurningRate.Value
+		end
+	elseif input == Enum.KeyCode.D then
+		if rotationForce.Value > -variables.MaxTurning.Value then
+			rotationForce.Value = rotationForce.Value - variables.TurningRate.Value
+		end
+	end
+end
+
+function shipInfo.FreezePlayer(player, boolean)
+	local character = player.Character
+	local humanoid = character.Humanoid
+	wait(0.2)
+	if boolean == true then
+		humanoid.WalkSpeed = 0
+		humanoid.JumpHeight = 0
+	else
+		humanoid.WalkSpeed = 16
+		humanoid.JumpHeight = 7.2		
+	end
+end
+
+return shipInfo
+]]></ProtectedString>
 					<int64 name="SourceAssetId">-1</int64>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
@@ -26220,9 +26469,9 @@ end)]]></ProtectedString>
 
     Calm_Wave = {
 
-        Wavelength = 0.5,
-        Amplitude = 0.5,
-        Speed = 1,
+        Wavelength = 2,
+        Amplitude = 2,
+        Speed = 0.1,
         WindDirection = Vector2.new(0.5, 0.5),
     },
 }

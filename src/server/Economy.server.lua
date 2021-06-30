@@ -1,7 +1,7 @@
 local buyingSpawning = game.ReplicatedStorage:WaitForChild("Events").BuyingSpawning
 local sellingDeleting = game.ReplicatedStorage:WaitForChild("Events").SellingDeleting
 local playerProfiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
-local prices = require(game.ReplicatedStorage:WaitForChild("Modules").Prices)
+local prices = require(game.ReplicatedStorage:WaitForChild("Common").Prices)
 
 buyingSpawning.OnServerEvent:Connect(function(player, item, region)
 	local itemPrice = prices["Prices"][item]
