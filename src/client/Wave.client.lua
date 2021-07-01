@@ -1,6 +1,7 @@
 local ocean = game.Workspace:FindFirstChild("Ocean")
 local waves = require(game.ReplicatedStorage:WaitForChild("Common").Waves)
 local chunks = require(game.ReplicatedStorage:WaitForChild("Common").Chunks)
+local platform = game.Workspace.Platform.Part
 local currentChunksTable = {}
 
 local function CreateWaves()
@@ -18,7 +19,7 @@ local function UpdateWaves()
 end
 
 local function LoadChunks()
-    chunks:UpdateChunks()
+    chunks:UpdateChunks(platform.Position)
     wait(0.1)
     CreateWaves()
     UpdateWaves()

@@ -84,27 +84,27 @@
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<CoordinateFrame name="CFrame">
-					<X>6.54411221</X>
-					<Y>108.172699</Y>
-					<Z>-24.0806389</Z>
-					<R00>0.322546363</R00>
-					<R01>-0.172481403</R01>
-					<R02>0.930706143</R02>
-					<R10>3.72529074e-09</R10>
-					<R11>0.983257711</R11>
-					<R12>0.182220399</R12>
-					<R20>-0.946553767</R20>
-					<R21>-0.0587745234</R21>
-					<R22>0.317146182</R22>
+					<X>697.842285</X>
+					<Y>495.430328</Y>
+					<Z>873.261414</Z>
+					<R00>-0.0270106327</R00>
+					<R01>-0.653188467</R01>
+					<R02>0.75671351</R02>
+					<R10>-0</R10>
+					<R11>0.756989777</R11>
+					<R12>0.653426826</R12>
+					<R20>-0.99963522</R20>
+					<R21>0.0176494718</R21>
+					<R22>-0.020446768</R22>
 				</CoordinateFrame>
 				<Ref name="CameraSubject">null</Ref>
 				<token name="CameraType">0</token>
 				<float name="FieldOfView">70</float>
 				<token name="FieldOfViewMode">0</token>
 				<CoordinateFrame name="Focus">
-					<X>4.6826992</X>
-					<Y>107.808258</Y>
-					<Z>-24.7149315</Z>
+					<X>696.328857</X>
+					<Y>494.123474</Y>
+					<Z>873.302307</Z>
 					<R00>1</R00>
 					<R01>0</R01>
 					<R02>0</R02>
@@ -1478,14 +1478,39 @@ local chunkSettings = require(game.ReplicatedStorage:WaitForChild("Common").Chun
 local runService = game:GetService("RunService")
 local chunkConnection
 
+function chunks.SetArray(row, column, value)
+    for x = 0, row do
+        if chunks.chunkTable[x] == nil then
+            chunks.chunkTable[x] = {}
+        end
+        for z = 0, column  do
+            if chunks.chunkTable[x][z] == nil then
+                chunks.chunkTable[x][z] = value
+            end
+        end
+    end
+end
+
+function chunks.CreateChunk(x, z)
+    print(x .. " " .. z)
+    local chunk = chunkSettings.ChunkTemplate:Clone()
+    chunks.SetArray(x, z, chunk)
+    chunk.Parent = chunkSettings.ChunkDirectory
+
+    local calculatedPosition = Vector2.new(x, z) * chunkSettings.ChunkSize
+    chunk.Position = Vector3.new(calculatedPosition.X - 2000, 0, calculatedPosition.Y - 2000)
+    chunk.Name = chunk.Name .. x .. " " .. z 
+end
+
 function chunks:UpdateChunks(playerPosition)
     chunkConnection = runService.Stepped:Connect(function()
-        if #chunks.chunkTable == 0 then
-            local initialChunk = chunkSettings.ChunkTemplate:Clone()
-            initialChunk.Parent = chunkSettings.ChunkDirectory
-            table.insert(chunks.chunkTable, initialChunk)
-        elseif #chunks.chunkTable > 0 then
-            print("More than one chunk active")
+        local chunksVisible = math.round(chunkSettings.DrawDistance / chunkSettings.ChunkSize)
+        for x = 0, chunksVisible do
+            for z = 0, chunksVisible do
+                if chunks.chunkTable[x] == nil or chunks.chunkTable[x][z] == nil then
+                    chunks.CreateChunk(x,z)
+                end
+            end
         end
     end)
 end
@@ -1673,8 +1698,8 @@ return module]]></ProtectedString>
 					<ProtectedString name="Source"><![CDATA[local chunkSettings = {
     ChunkDirectory = game.Workspace.Ocean,
     ChunkTemplate = game.ReplicatedStorage:WaitForChild("Chunks").OceanPlane,
-    
-    DrawDistance = 2000,
+
+    DrawDistance = 4000,
     ChunkSize = 2000,
 }
 
@@ -2608,7 +2633,7 @@ return chunkSettings]]></ProtectedString>
 					</Vector3>
 					<Vector3 name="size">
 						<X>2000</X>
-						<Y>0.000325841364</Y>
+						<Y>0.0500000007</Y>
 						<Z>2000</Z>
 					</Vector3>
 				</Properties>
@@ -13757,7 +13782,7 @@ return chunkSettings]]></ProtectedString>
 						<int64 name="SourceAssetId">-1</int64>
 						<BinaryString name="Tags"></BinaryString>
 						<Content name="Texture"><url>http://www.roblox.com/asset/?id=6816027871</url></Content>
-						<float name="Transparency">0.400000006</float>
+						<float name="Transparency">0.300000012</float>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>

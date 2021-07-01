@@ -5,14 +5,38 @@ local chunkSettings = require(game.ReplicatedStorage:WaitForChild("Common").Chun
 local runService = game:GetService("RunService")
 local chunkConnection
 
+function chunks.SetArray(row, column, value)
+    for x = -row, row do
+        if chunks.chunkTable[x] == nil then
+            chunks.chunkTable[x] = {}
+        end
+        for z = -column, column  do
+            if chunks.chunkTable[x][z] == nil then
+                chunks.chunkTable[x][z] = value
+            end
+        end
+    end
+end
+
+function chunks.CreateChunk(x, z, playerPosition)
+    local chunk = chunkSettings.ChunkTemplate:Clone()
+    chunks.SetArray(x, z, chunk)
+    chunk.Parent = chunkSettings.ChunkDirectory
+
+    local calculatedPosition = Vector2.new(x, z) * chunkSettings.ChunkSize + Vector2.new(playerPosition.X, playerPosition.Z)
+    chunk.Position = Vector3.new(calculatedPosition.X, 0, calculatedPosition.Y)
+    chunk.Name = chunk.Name .. ": " .. x .. " " .. z 
+end
+
 function chunks:UpdateChunks(playerPosition)
     chunkConnection = runService.Stepped:Connect(function()
-        if #chunks.chunkTable == 0 then
-            local initialChunk = chunkSettings.ChunkTemplate:Clone()
-            initialChunk.Parent = chunkSettings.ChunkDirectory
-            table.insert(chunks.chunkTable, initialChunk)
-        elseif #chunks.chunkTable > 0 then
-            print("More than one chunk active")
+        local chunksVisible = math.round(chunkSettings.DrawDistance / chunkSettings.ChunkSize)
+        for x = -chunksVisible, chunksVisible do
+            for z = -chunksVisible, chunksVisible do
+                if chunks.chunkTable[x] == nil or chunks.chunkTable[x][z] == nil then
+                    chunks.CreateChunk(x,z, playerPosition)
+                end
+            end
         end
     end)
 end
