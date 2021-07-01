@@ -1,9 +1,34 @@
-local ocean = game.Workspace:FindFirstChild("OceanPlane")
-local ocean2 = game.Workspace:FindFirstChild("OceanPlane2")
+local ocean = game.Workspace:FindFirstChild("Ocean")
 local waves = require(game.ReplicatedStorage:WaitForChild("Common").Waves)
+local chunks = require(game.ReplicatedStorage:WaitForChild("Common").Chunks)
+local currentChunksTable = {}
 
-waves.New("My First Wave", ocean)
-waves.New("My Second Wave", ocean2)
+local function CreateWaves()
+    for i,v in pairs(ocean:GetChildren())  do
+        local name = v.Name .. i
+        waves.New(name, v)
+        table.insert(currentChunksTable, name)
+    end
+end
 
-waves:Update("My First Wave")
-waves:Update("My Second Wave")
+local function UpdateWaves()
+    for i = 1, #currentChunksTable  do
+        waves:Update(currentChunksTable[i])
+    end
+end
+
+local function LoadChunks()
+    chunks:UpdateChunks()
+    wait(0.1)
+    CreateWaves()
+    UpdateWaves()
+end
+
+local function TerminateChunks()
+    print("Terminating Chunks")
+    chunks:TerminateChunks(true)
+    waves:Terminate()
+end
+
+LoadChunks()
+

@@ -72,9 +72,13 @@ end
 function wave:Terminate(index)
     if index then
         wave.connections[index].connection:Disconnect()
+        table.remove(wave.connections, index)
+        table.remove(wave, index)
     else
         for i = 1, #wave.connections  do
             wave.connections[i].connection:Disconnect()
+            table.remove(wave.connections, i)
+            table.remove(wave, i)
         end
     end
 end

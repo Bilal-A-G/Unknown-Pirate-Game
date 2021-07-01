@@ -1,5 +1,4 @@
-local wave = {
-
+local waveSettings = {
     Calm_Wave = {
 
         Wavelength = 5,
@@ -9,4 +8,4 @@ local wave = {
     },
 }
 
-return wave
+return waveSettings
