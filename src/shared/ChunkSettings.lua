@@ -1,8 +1,9 @@
 local chunkSettings = {
     ChunkDirectory = game.Workspace.Ocean,
     ChunkTemplate = game.ReplicatedStorage:WaitForChild("Chunks").OceanPlane,
+    ChunkName = "OceanPlane",
 
-    DrawDistance = 4000,
+    DrawDistance = 2000,
     ChunkSize = 2000,
 }
 

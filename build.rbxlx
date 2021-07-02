@@ -84,27 +84,27 @@
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<CoordinateFrame name="CFrame">
-					<X>697.842285</X>
-					<Y>495.430328</Y>
-					<Z>873.261414</Z>
-					<R00>-0.0270106327</R00>
-					<R01>-0.653188467</R01>
-					<R02>0.75671351</R02>
+					<X>-15.9120607</X>
+					<Y>82.515686</Y>
+					<Z>10.7178411</Z>
+					<R00>-0.057216391</R00>
+					<R01>0.86971277</R01>
+					<R02>-0.490230739</R02>
 					<R10>-0</R10>
-					<R11>0.756989777</R11>
-					<R12>0.653426826</R12>
-					<R20>-0.99963522</R20>
-					<R21>0.0176494718</R21>
-					<R22>-0.020446768</R22>
+					<R11>0.491035193</R11>
+					<R12>0.871139824</R12>
+					<R20>0.998361886</R20>
+					<R21>0.0498434752</R21>
+					<R22>-0.0280952547</R22>
 				</CoordinateFrame>
 				<Ref name="CameraSubject">null</Ref>
 				<token name="CameraType">0</token>
 				<float name="FieldOfView">70</float>
 				<token name="FieldOfViewMode">0</token>
 				<CoordinateFrame name="Focus">
-					<X>696.328857</X>
-					<Y>494.123474</Y>
-					<Z>873.302307</Z>
+					<X>-14.9315996</X>
+					<Y>80.773407</Y>
+					<Z>10.7740316</Z>
 					<R00>1</R00>
 					<R01>0</R01>
 					<R02>0</R02>
@@ -781,30 +781,15 @@ end)]]></ProtectedString>
 						<string name="Name">Wave</string>
 						<string name="ScriptGuid">{A91E0A35-7D2C-45A9-B07A-94C73197A3B5}</string>
 						<ProtectedString name="Source"><![CDATA[local ocean = game.Workspace:FindFirstChild("Ocean")
+local players = game:GetService("Players")
+local player = players.LocalPlayer
 local waves = require(game.ReplicatedStorage:WaitForChild("Common").Waves)
 local chunks = require(game.ReplicatedStorage:WaitForChild("Common").Chunks)
 local platform = game.Workspace.Platform.Part
 local currentChunksTable = {}
 
-local function CreateWaves()
-    for i,v in pairs(ocean:GetChildren())  do
-        local name = v.Name .. i
-        waves.New(name, v)
-        table.insert(currentChunksTable, name)
-    end
-end
-
-local function UpdateWaves()
-    for i = 1, #currentChunksTable  do
-        waves:Update(currentChunksTable[i])
-    end
-end
-
 local function LoadChunks()
-    chunks:UpdateChunks(platform.Position)
-    wait(0.1)
-    CreateWaves()
-    UpdateWaves()
+    chunks:UpdateChunks(player)
 end
 
 local function TerminateChunks()
@@ -1476,6 +1461,7 @@ return waveSettings]]></ProtectedString>
 chunks.chunkTable = {}
 
 local chunkSettings = require(game.ReplicatedStorage:WaitForChild("Common").ChunkSettings)
+local waves = require(game.ReplicatedStorage:WaitForChild("Common").Waves)
 local runService = game:GetService("RunService")
 local chunkConnection
 
@@ -1492,23 +1478,34 @@ function chunks.SetArray(row, column, value)
     end
 end
 
-function chunks.CreateChunk(x, z, playerPosition)
+function chunks.CreateChunk(x, z)
     local chunk = chunkSettings.ChunkTemplate:Clone()
     chunks.SetArray(x, z, chunk)
     chunk.Parent = chunkSettings.ChunkDirectory
 
-    local calculatedPosition = Vector2.new(x, z) * chunkSettings.ChunkSize + Vector2.new(playerPosition.X, playerPosition.Z)
+    local calculatedPosition = Vector2.new(x, z) * chunkSettings.ChunkSize
     chunk.Position = Vector3.new(calculatedPosition.X, 0, calculatedPosition.Y)
-    chunk.Name = chunk.Name .. ": " .. x .. " " .. z 
+    chunk.Name = chunkSettings.ChunkName .. x .. z 
+    waves.New(chunk.Name, chunk)
+    waves:Update(chunk.Name)
 end
 
-function chunks:UpdateChunks(playerPosition)
+function chunks:UpdateChunks(player)
     chunkConnection = runService.Stepped:Connect(function()
+        local playerCharacter = player.Character
+
+        local playerPosition = playerCharacter:FindFirstChild("HumanoidRootPart").Position 
         local chunksVisible = math.round(chunkSettings.DrawDistance / chunkSettings.ChunkSize)
+
+        local currentChunkX = math.round(playerPosition.X / chunkSettings.ChunkSize)
+        local currentChunkZ = math.round(playerPosition.Z / chunkSettings.ChunkSize)
+
         for x = -chunksVisible, chunksVisible do
             for z = -chunksVisible, chunksVisible do
-                if chunks.chunkTable[x] == nil or chunks.chunkTable[x][z] == nil then
-                    chunks.CreateChunk(x,z, playerPosition)
+                local indexX = currentChunkX + z
+                local indexZ = currentChunkZ + x
+                if not chunkSettings.ChunkDirectory:FindFirstChild(chunkSettings.ChunkName .. indexX .. indexZ) then
+                    chunks.CreateChunk(indexX, indexZ)
                 end
             end
         end
@@ -1698,8 +1695,9 @@ return module]]></ProtectedString>
 					<ProtectedString name="Source"><![CDATA[local chunkSettings = {
     ChunkDirectory = game.Workspace.Ocean,
     ChunkTemplate = game.ReplicatedStorage:WaitForChild("Chunks").OceanPlane,
+    ChunkName = "OceanPlane",
 
-    DrawDistance = 4000,
+    DrawDistance = 2000,
     ChunkSize = 2000,
 }
 
@@ -13782,7 +13780,7 @@ return chunkSettings]]></ProtectedString>
 						<int64 name="SourceAssetId">-1</int64>
 						<BinaryString name="Tags"></BinaryString>
 						<Content name="Texture"><url>http://www.roblox.com/asset/?id=6816027871</url></Content>
-						<float name="Transparency">0.300000012</float>
+						<float name="Transparency">0.200000003</float>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>
