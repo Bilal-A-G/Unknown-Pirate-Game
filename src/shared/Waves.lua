@@ -63,17 +63,21 @@ function wave:Update(waveName)
                 local boneHeight = wave.SinesApproximation(Vector2.new(v.WorldPosition.X, v.WorldPosition.Z))
                 v.WorldPosition = Vector3.new(v.WorldPosition.X, boneHeight, v.WorldPosition.Z)
             end
-        end  
+        end
     end)
 
      currentConnection.connection = intantiatedConnection
 end
 
-function wave:Terminate(index)
-    if index then
-        wave.connections[index].connection:Disconnect()
-        table.remove(wave.connections, index)
-        table.remove(wave, index)
+function wave:Terminate(waveName)
+    if waveName then
+        for i = 1, #wave.connections  do
+            if wave.connections[i] and wave.connections[i].Name == waveName then
+                wave.connections[i].connection:Disconnect()
+                table.remove(wave.connections, i)
+                table.remove(wave, i)              
+            end
+        end
     else
         for i = 1, #wave.connections  do
             wave.connections[i].connection:Disconnect()

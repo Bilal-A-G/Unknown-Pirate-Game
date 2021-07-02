@@ -1486,6 +1486,7 @@ function chunks.CreateChunk(x, z)
     local calculatedPosition = Vector2.new(x, z) * chunkSettings.ChunkSize
     chunk.Position = Vector3.new(calculatedPosition.X, 0, calculatedPosition.Y)
     chunk.Name = chunkSettings.ChunkName .. x .. z 
+    
     waves.New(chunk.Name, chunk)
     waves:Update(chunk.Name)
 end
