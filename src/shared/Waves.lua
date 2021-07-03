@@ -27,16 +27,22 @@ function wave.New(waveName, wavePlane)
     table.insert(wave.connections, newConnection)
 end
 
-function wave.SinesApproximation(point)
-    local wavelength = waveSettings.Calm_Wave.Wavelength
-    local amplitude = waveSettings.Calm_Wave.Amplitude
-    local speed = waveSettings.Calm_Wave.Speed
-    local windDirection = waveSettings.Calm_Wave.WindDirection
+function wave.GerstnerWave(point, waveIndex)
+    local wavelength = waveSettings.Calm_Wave.Waves[waveIndex].Wavelength
+    local amplitude = waveSettings.Calm_Wave.Waves[waveIndex].Amplitude
+    local speed = waveSettings.Calm_Wave.Waves[waveIndex].Speed
+    local windDirection = waveSettings.Calm_Wave.Waves[waveIndex].WindDirection
+    local steepness = waveSettings.Calm_Wave.Waves[waveIndex].Steepness
 
-    local w = 2/wavelength
-    local phaseConstant = speed * w
+    local W = 2/wavelength
+    local phaseConstant = speed * W
+    local Q = steepness/W * amplitude
 
-    return amplitude * math.sin(windDirection:Dot(point) * w + clock:GetTime() * phaseConstant)
+    local xTranslation = point.X + (Q * amplitude * windDirection.X * math.cos(windDirection:Dot(point) * W + clock:GetTime() * phaseConstant))
+    local yTranslation = amplitude * math.sin(windDirection:Dot(point) * W + clock:GetTime() * phaseConstant)
+    local zTranslation = point.Y + (Q * amplitude * windDirection.Y * math.cos(windDirection:Dot(point) * W + clock:GetTime() * phaseConstant))
+
+    return Vector3.new(xTranslation, yTranslation, zTranslation)
 end
 
 function wave:Update(waveName)
@@ -57,11 +63,18 @@ function wave:Update(waveName)
         end
     end
 
-    local intantiatedConnection =  runService.Stepped:Connect(function()
+    local intantiatedConnection = runService.Stepped:Connect(function()
         for i,v in pairs(currentWave.bones) do
             if v:IsA("Bone") then
-                local boneHeight = wave.SinesApproximation(Vector2.new(v.WorldPosition.X, v.WorldPosition.Z))
-                v.WorldPosition = Vector3.new(v.WorldPosition.X, boneHeight, v.WorldPosition.Z)
+                local boneHeightTransform
+                for z,k in pairs(waveSettings.Calm_Wave.Waves)  do
+                    if boneHeightTransform then
+                        boneHeightTransform = boneHeightTransform + wave.GerstnerWave(Vector2.new(v.WorldPosition.X, v.WorldPosition.Z), z).Y
+                    else
+                        boneHeightTransform = wave.GerstnerWave(Vector2.new(v.WorldPosition.X, v.WorldPosition.Z), z).Y
+                    end
+                end
+                v.WorldPosition = Vector3.new(v.WorldPosition.X, boneHeightTransform, v.WorldPosition.Z)
             end
         end
     end)

@@ -84,27 +84,27 @@
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<CoordinateFrame name="CFrame">
-					<X>-15.9120607</X>
-					<Y>82.515686</Y>
-					<Z>10.7178411</Z>
-					<R00>-0.057216391</R00>
-					<R01>0.86971277</R01>
-					<R02>-0.490230739</R02>
+					<X>110.448639</X>
+					<Y>396.43988</Y>
+					<Z>966.572388</Z>
+					<R00>0.918607652</R00>
+					<R01>0.230568051</R01>
+					<R02>-0.32093358</R02>
 					<R10>-0</R10>
-					<R11>0.491035193</R11>
-					<R12>0.871139824</R12>
-					<R20>0.998361886</R20>
-					<R21>0.0498434752</R21>
-					<R22>-0.0280952547</R22>
+					<R11>0.812138915</R11>
+					<R12>0.583464265</R12>
+					<R20>0.395170808</R20>
+					<R21>-0.535974741</R21>
+					<R22>0.746037006</R22>
 				</CoordinateFrame>
 				<Ref name="CameraSubject">null</Ref>
 				<token name="CameraType">0</token>
 				<float name="FieldOfView">70</float>
 				<token name="FieldOfViewMode">0</token>
 				<CoordinateFrame name="Focus">
-					<X>-14.9315996</X>
-					<Y>80.773407</Y>
-					<Z>10.7740316</Z>
+					<X>111.090424</X>
+					<Y>395.273102</Y>
+					<Z>965.080505</Z>
 					<R00>1</R00>
 					<R01>0</R01>
 					<R02>0</R02>
@@ -780,25 +780,11 @@ end)]]></ProtectedString>
 						<Content name="LinkedSource"><null></null></Content>
 						<string name="Name">Wave</string>
 						<string name="ScriptGuid">{A91E0A35-7D2C-45A9-B07A-94C73197A3B5}</string>
-						<ProtectedString name="Source"><![CDATA[local ocean = game.Workspace:FindFirstChild("Ocean")
-local players = game:GetService("Players")
+						<ProtectedString name="Source"><![CDATA[local players = game:GetService("Players")
 local player = players.LocalPlayer
-local waves = require(game.ReplicatedStorage:WaitForChild("Common").Waves)
 local chunks = require(game.ReplicatedStorage:WaitForChild("Common").Chunks)
-local platform = game.Workspace.Platform.Part
-local currentChunksTable = {}
 
-local function LoadChunks()
-    chunks:UpdateChunks(player)
-end
-
-local function TerminateChunks()
-    print("Terminating Chunks")
-    chunks:TerminateChunks(true)
-    waves:Terminate()
-end
-
-LoadChunks()
+chunks:UpdateChunks(player)
 
 ]]></ProtectedString>
 						<int64 name="SourceAssetId">-1</int64>
@@ -1175,16 +1161,22 @@ function wave.New(waveName, wavePlane)
     table.insert(wave.connections, newConnection)
 end
 
-function wave.SinesApproximation(point)
-    local wavelength = waveSettings.Calm_Wave.Wavelength
-    local amplitude = waveSettings.Calm_Wave.Amplitude
-    local speed = waveSettings.Calm_Wave.Speed
-    local windDirection = waveSettings.Calm_Wave.WindDirection
+function wave.GerstnerWave(point, waveIndex)
+    local wavelength = waveSettings.Calm_Wave.Waves[waveIndex].Wavelength
+    local amplitude = waveSettings.Calm_Wave.Waves[waveIndex].Amplitude
+    local speed = waveSettings.Calm_Wave.Waves[waveIndex].Speed
+    local windDirection = waveSettings.Calm_Wave.Waves[waveIndex].WindDirection
+    local steepness = waveSettings.Calm_Wave.Waves[waveIndex].Steepness
 
-    local w = 2/wavelength
-    local phaseConstant = speed * w
+    local W = 2/wavelength
+    local phaseConstant = speed * W
+    local Q = steepness/W * amplitude
 
-    return amplitude * math.sin(windDirection:Dot(point) * w + clock:GetTime() * phaseConstant)
+    local xTranslation = point.X + (Q * amplitude * windDirection.X * math.cos(windDirection:Dot(point) * W + clock:GetTime() * phaseConstant))
+    local yTranslation = amplitude * math.sin(windDirection:Dot(point) * W + clock:GetTime() * phaseConstant)
+    local zTranslation = point.Y + (Q * amplitude * windDirection.Y * math.cos(windDirection:Dot(point) * W + clock:GetTime() * phaseConstant))
+
+    return Vector3.new(xTranslation, yTranslation, zTranslation)
 end
 
 function wave:Update(waveName)
@@ -1205,23 +1197,34 @@ function wave:Update(waveName)
         end
     end
 
-    local intantiatedConnection =  runService.Stepped:Connect(function()
+    local intantiatedConnection = runService.Stepped:Connect(function()
         for i,v in pairs(currentWave.bones) do
             if v:IsA("Bone") then
-                local boneHeight = wave.SinesApproximation(Vector2.new(v.WorldPosition.X, v.WorldPosition.Z))
-                v.WorldPosition = Vector3.new(v.WorldPosition.X, boneHeight, v.WorldPosition.Z)
+                local boneHeightTransform
+                for z,k in pairs(waveSettings.Calm_Wave.Waves)  do
+                    if boneHeightTransform then
+                        boneHeightTransform = boneHeightTransform + wave.GerstnerWave(Vector2.new(v.WorldPosition.X, v.WorldPosition.Z), z).Y
+                    else
+                        boneHeightTransform = wave.GerstnerWave(Vector2.new(v.WorldPosition.X, v.WorldPosition.Z), z).Y
+                    end
+                end
+                v.WorldPosition = Vector3.new(v.WorldPosition.X, boneHeightTransform, v.WorldPosition.Z)
             end
-        end  
+        end
     end)
 
      currentConnection.connection = intantiatedConnection
 end
 
-function wave:Terminate(index)
-    if index then
-        wave.connections[index].connection:Disconnect()
-        table.remove(wave.connections, index)
-        table.remove(wave, index)
+function wave:Terminate(waveName)
+    if waveName then
+        for i = 1, #wave.connections  do
+            if wave.connections[i] and wave.connections[i].Name == waveName then
+                wave.connections[i].connection:Disconnect()
+                table.remove(wave.connections, i)
+                table.remove(wave, i)              
+            end
+        end
     else
         for i = 1, #wave.connections  do
             wave.connections[i].connection:Disconnect()
@@ -1439,10 +1442,36 @@ return shipInfo
 					<ProtectedString name="Source"><![CDATA[local waveSettings = {
     Calm_Wave = {
 
-        Wavelength = 5,
-        Amplitude = 20,
-        Speed = 0.5,
-        WindDirection = Vector2.new(0.5, 0.5),
+        Waves = {
+
+            PrimaryWave = {
+
+                Wavelength = 5,
+                Amplitude = 30,
+                Speed = 0.5,
+                WindDirection = Vector2.new(0.5, 0.5),
+                Steepness = 0.5,
+            },
+
+            SecondaryWave = {
+
+                Wavelength = 4,
+                Amplitude = 20,
+                Speed = 0.7,
+                WindDirection = Vector2.new(0.9, -0.5),
+                Steepness = 0,
+            },
+
+            TertiaryWave = {
+
+                Wavelength = 5,
+                Amplitude = 25,
+                Speed = 1,
+                WindDirection = Vector2.new(0.95, 0),
+                Steepness = 0,
+            },
+
+        },
     },
 }
 
@@ -1464,6 +1493,7 @@ local chunkSettings = require(game.ReplicatedStorage:WaitForChild("Common").Chun
 local waves = require(game.ReplicatedStorage:WaitForChild("Common").Waves)
 local runService = game:GetService("RunService")
 local chunkConnection
+local renderDistance = chunkSettings.DrawDistance * 1.5
 
 function chunks.SetArray(row, column, value)
     for x = -row, row do
@@ -1482,14 +1512,15 @@ function chunks.CreateChunk(x, z)
     local chunk = chunkSettings.ChunkTemplate:Clone()
     chunks.SetArray(x, z, chunk)
     chunk.Parent = chunkSettings.ChunkDirectory
+    chunk.Name = chunkSettings.ChunkName .. x .. z 
 
     local calculatedPosition = Vector2.new(x, z) * chunkSettings.ChunkSize
     chunk.Position = Vector3.new(calculatedPosition.X, 0, calculatedPosition.Y)
-    chunk.Name = chunkSettings.ChunkName .. x .. z 
-    
+
     waves.New(chunk.Name, chunk)
     waves:Update(chunk.Name)
 end
+
 
 function chunks:UpdateChunks(player)
     chunkConnection = runService.Stepped:Connect(function()
@@ -1505,24 +1536,38 @@ function chunks:UpdateChunks(player)
             for z = -chunksVisible, chunksVisible do
                 local indexX = currentChunkX + z
                 local indexZ = currentChunkZ + x
-                if not chunkSettings.ChunkDirectory:FindFirstChild(chunkSettings.ChunkName .. indexX .. indexZ) then
+                local currentChunkInDirectory = chunkSettings.ChunkDirectory:FindFirstChild(chunkSettings.ChunkName .. indexX .. indexZ)
+                if not currentChunkInDirectory then
                     chunks.CreateChunk(indexX, indexZ)
                 end
+            end
+        end
+
+        for i = 1, #chunkSettings.ChunkDirectory:GetChildren()  do
+            if (chunkSettings.ChunkDirectory:GetChildren()[i].Position - playerPosition).Magnitude > renderDistance then
+                chunks.SetActive(false, chunkSettings.ChunkDirectory:GetChildren()[i])
+            elseif (chunkSettings.ChunkDirectory:GetChildren()[i].Position - playerPosition).Magnitude <= renderDistance then
+                chunks.SetActive(true, chunkSettings.ChunkDirectory:GetChildren()[i])
             end
         end
     end)
 end
 
-function chunks:TerminateChunks(destroyChunks)
-    chunkConnection:Disconnect()
-    if destroyChunks then
-        for i = 1 ,#chunks.chunkTable  do
-            chunks.chunkTable[i]:Destroy()
-            table.remove(chunks.chunkTable, i)
+function chunks.SetActive(isActive, chunk)
+    local decal = chunk:FindFirstChild("Decal")
+    if isActive and chunk then
+        if chunk.Transparency == 1 and decal.Transparency == 1 then
+            decal.Transparency = 0.2
+            chunk.Transparency = 0
+            waves.New(chunk.Name, chunk)
+            waves:Update(chunk.Name)
         end
+    elseif not isActive and chunk then
+        decal.Transparency = 1
+        chunk.Transparency = 1
+        waves:Terminate(chunk.Name)
     end
 end
-
 
 return chunks]]></ProtectedString>
 					<int64 name="SourceAssetId">-1</int64>
@@ -2585,7 +2630,7 @@ return chunkSettings]]></ProtectedString>
 					<token name="LeftSurfaceInput">0</token>
 					<bool name="Locked">false</bool>
 					<bool name="Massless">false</bool>
-					<token name="Material">1568</token>
+					<token name="Material">256</token>
 					<Content name="MeshID"><url>https://assetdelivery.roblox.com/v1/asset/?id=6552401422</url></Content>
 					<Content name="MeshId"><url>https://assetdelivery.roblox.com/v1/asset/?id=6552401422</url></Content>
 					<string name="Name">OceanPlane</string>
@@ -2605,7 +2650,7 @@ return chunkSettings]]></ProtectedString>
 						<R21>0</R21>
 						<R22>1</R22>
 					</CoordinateFrame>
-					<float name="Reflectance">1</float>
+					<float name="Reflectance">0</float>
 					<token name="RenderFidelity">1</token>
 					<float name="RightParamA">-0.5</float>
 					<float name="RightParamB">0.5</float>
