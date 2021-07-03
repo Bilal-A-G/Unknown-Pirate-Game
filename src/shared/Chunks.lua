@@ -2,6 +2,8 @@ local chunks = {}
 chunks.chunkTable = {}
 
 local chunkSettings = require(game.ReplicatedStorage:WaitForChild("Common").ChunkSettings)
+local waveSettings = require(game.ReplicatedStorage:WaitForChild("Common").WaveSettings)
+local floatingEvent = game.ReplicatedStorage:WaitForChild("Events").FloatingPart
 local waves = require(game.ReplicatedStorage:WaitForChild("Common").Waves)
 local runService = game:GetService("RunService")
 local chunkConnection
@@ -37,8 +39,8 @@ end
 function chunks:UpdateChunks(player)
     chunkConnection = runService.Stepped:Connect(function()
         local playerCharacter = player.Character
-
-        local playerPosition = playerCharacter:FindFirstChild("HumanoidRootPart").Position 
+        local humanoidRootPart = playerCharacter:FindFirstChild("HumanoidRootPart")
+        local playerPosition = humanoidRootPart.Position 
         local chunksVisible = math.round(chunkSettings.DrawDistance / chunkSettings.ChunkSize)
 
         local currentChunkX = math.round(playerPosition.X / chunkSettings.ChunkSize)
