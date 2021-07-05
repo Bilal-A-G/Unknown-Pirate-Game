@@ -86,8 +86,8 @@ end
 function wave.SimulatePhysics(waveName, part)
     local attachments = {}
     local viscosity = waveSettings.viscosity
-    local depthBeforeSubmerged = 0.001
-    local displacementAmount = 1.3
+    local depthBeforeSubmerged = 50
+    local displacementAmount = 1
     local cornerTransforms = {
         Vector3.new(1, -1, 1),
         Vector3.new(1, -1, -1),
@@ -118,11 +118,25 @@ function wave.SimulatePhysics(waveName, part)
 	waterDragTorque.P = math.huge
 	waterDragTorque.Parent = part
 
+    local cancelGravity = Instance.new("BodyForce")
+    cancelGravity.Name = "CancelGravity"
+    cancelGravity.Force = Vector3.new(0, workspace.Gravity * part.AssemblyMass, 0)
+    cancelGravity.Parent = part
+
+    local largestSize = part.Size.X
+	if part.Size.Y > largestSize then
+		largestSize = part.Size.Y
+	end
+	if part.Size.Z > largestSize then
+		largestSize = part.Size.Z
+	end
+
     local newPhysicsConnection = runService.Heartbeat:Connect(function()
         if runService:IsServer() then
             for i = 1, #attachments  do
                 local currentAttachment = attachments[i].Attachment0
                 local finalWaveHeight
+                local finalForce
                 for x,z in pairs(waveSettings.Calm_Wave.Waves)  do
                     if finalWaveHeight then
                         finalWaveHeight = finalWaveHeight + wave.GerstnerWave(Vector2.new(currentAttachment.WorldPosition.X, currentAttachment.WorldPosition.Z), x)
@@ -130,15 +144,40 @@ function wave.SimulatePhysics(waveName, part)
                         finalWaveHeight = wave.GerstnerWave(Vector2.new(currentAttachment.WorldPosition.X, currentAttachment.WorldPosition.Z), x)
                     end
                 end
-                if currentAttachment.WorldPosition.Y < finalWaveHeight.Y then
+                if currentAttachment.WorldPosition.Y < -finalWaveHeight.Y then
                     local displacementMultiplier = math.clamp((finalWaveHeight.Y - currentAttachment.WorldPosition.Y)/depthBeforeSubmerged, 0, 1) * displacementAmount
-                    local dragForce = Vector3.new(part:GetVelocityAtPosition(currentAttachment.WorldPosition).X * -1 * viscosity, part:GetVelocityAtPosition(currentAttachment.WorldPosition).Y * -1 * viscosity, part:GetVelocityAtPosition(currentAttachment.WorldPosition).Z * -1 * viscosity)
-                    local boyancyForce = Vector3.new(0, game.Workspace.Gravity/4 * part.AssemblyMass * displacementMultiplier, 0)
-                    attachments[i].Force = boyancyForce + dragForce
+                    local dragForce = (part.AssemblyLinearVelocity * viscosity * game.Workspace.Gravity/4 * part.AssemblyMass * displacementMultiplier)/4
+                    local boyancyForce = Vector3.new(0, game.Workspace.Gravity/4 * part.AssemblyMass * displacementMultiplier * 15, 0)
+                    finalForce = boyancyForce - dragForce 
+                else 
+                    finalForce = Vector3.new(0,0,0) 
+                end
+                
+                finalForce -= Vector3.new(0, game.Workspace.Gravity/4 * part.AssemblyMass)
+                part.AssemblyLinearVelocity = Vector3.new(0, -2.83, 0)
+				part.AssemblyAngularVelocity = Vector3.new(0, 0.001, 0) 
+                attachments[i].Force = finalForce
+            end
+            local waveHeight
+            for x,z in pairs(waveSettings.Calm_Wave.Waves)  do
+                if waveHeight then
+                    waveHeight = waveHeight + wave.GerstnerWave(Vector2.new(part.Position.X, part.Position.Z), x)
                 else
-                    attachments[i].Force = Vector3.new(0,0,0)
+                    waveHeight = wave.GerstnerWave(Vector2.new(part.Position.X, part.Position.Z), x)
                 end
             end
+            local difference = (part.Position.Y - part.Size.Y / 2) - waveHeight.Y
+    
+            local partAngularVelocity = part.AssemblyAngularVelocity
+    
+            if difference < 0 then
+                difference = 1
+            else
+                difference = (difference ^ 2) / 8
+            end
+            local torque = Vector3.new(math.abs(partAngularVelocity.X), math.abs(partAngularVelocity.Y), math.abs(partAngularVelocity.Z)) * largestSize * part.AssemblyMass * workspace.Gravity/ difference * 0.1
+            waterDragTorque.MaxTorque = torque
+            cancelGravity.Force = Vector3.new(0, workspace.Gravity * part.AssemblyMass, 0)
         end
     end)
 

@@ -1,9 +1,7 @@
 local waveSettings = {
 
-    positionalDrag = 0.4,
-    rotationalDrag = 0.1,
     swimmingRange = 2000,
-    viscosity = 5,
+    viscosity = 0.4,
 
     Calm_Wave = {
 
@@ -11,14 +9,14 @@ local waveSettings = {
 
             PrimaryWave = {
 
-                Wavelength = 2,
+                Wavelength = 3,
                 Amplitude = 30,
-                Speed = 0.5,
+                Speed = 0.7,
                 WindDirection = Vector2.new(1, 0),
-                Steepness = 0.2,
+                Steepness = 0.1,
             },
 
-            --[[SecondaryWave = {
+            SecondaryWave = {
 
                 Wavelength = 3,
                 Amplitude = 15,
@@ -36,7 +34,6 @@ local waveSettings = {
                 Steepness = 0.9,
             },
 
-            --]]
         },
     },
 }
