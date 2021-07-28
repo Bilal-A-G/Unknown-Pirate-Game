@@ -8,6 +8,8 @@
 	2/7/21 Fluffmiceter
 ]]
 
+
+--Taken from the dev fourms, supposedly it makes stuff work better with the waves
 local module = {}
 
 local runService = game:GetService("RunService")

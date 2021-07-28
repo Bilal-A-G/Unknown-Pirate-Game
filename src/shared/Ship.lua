@@ -1,6 +1,7 @@
 local shipInfo = {}
 local playerprofiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
 
+--Ship stuff that doesn't matter cause waves don't work
 function shipInfo.ValidateCaptain(player, ship)
 	local helm = ship:FindFirstChild("Helm")
 	local variables = ship.Variables

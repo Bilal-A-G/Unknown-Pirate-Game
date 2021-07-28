@@ -3,6 +3,7 @@ local players = game:GetService("Players")
 local playerProfiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
 local prices = require(game.ReplicatedStorage:WaitForChild("Common").Prices)
 
+--Adds some basic values to the player once they join the game, pretty basic stuff and also not relevant
 players.PlayerAdded:Connect(function(player)
 	local profile = Instance.new("Folder", playerProfiles)
 	profile.Name = player.UserId

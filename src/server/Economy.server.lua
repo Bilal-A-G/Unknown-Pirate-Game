@@ -3,6 +3,7 @@ local sellingDeleting = game.ReplicatedStorage:WaitForChild("Events").SellingDel
 local playerProfiles = game.ReplicatedStorage:WaitForChild("PlayerProfiles")
 local prices = require(game.ReplicatedStorage:WaitForChild("Common").Prices)
 
+--Economy stuff, also not relevant
 buyingSpawning.OnServerEvent:Connect(function(player, item, region)
 	local itemPrice = prices["Prices"][item]
 	if item ~= "TestShip" then

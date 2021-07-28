@@ -1,6 +1,8 @@
+--Chunks table and a sub-table within called chunkTable
 local chunks = {}
 chunks.chunkTable = {}
 
+--Gets a bunch of modules, an event, and runservice
 local chunkSettings = require(game.ReplicatedStorage:WaitForChild("Common").ChunkSettings)
 local waveSettings = require(game.ReplicatedStorage:WaitForChild("Common").WaveSettings)
 local floatingEvent = game.ReplicatedStorage:WaitForChild("Events").FloatingPart
@@ -9,6 +11,7 @@ local runService = game:GetService("RunService")
 local chunkConnection
 local renderDistance = chunkSettings.DrawDistance * 1.5
 
+--Set array function within the chunks table that creates a 2d array (x and z values used as a key to access a chunk)
 function chunks.SetArray(row, column, value)
     for x = -row, row do
         if chunks.chunkTable[x] == nil then
@@ -22,6 +25,7 @@ function chunks.SetArray(row, column, value)
     end
 end
 
+--Populates the chunk array, names the chunk, positions the chunk, creates a new wave instance, and runs update with that wave instance
 function chunks.CreateChunk(x, z)
     local chunk = chunkSettings.ChunkTemplate:Clone()
     chunks.SetArray(x, z, chunk)
@@ -35,7 +39,7 @@ function chunks.CreateChunk(x, z)
     waves:Update(chunk.Name)
 end
 
-
+--Creates a runservice loop which handles gerstner wave transformations for bones in the chunk, sets chunks as active or inactive based on distance from player, and caches the runservice loop for later use
 function chunks:UpdateChunks(player)
     chunkConnection = runService.Stepped:Connect(function()
         local playerCharacter = player.Character
@@ -67,6 +71,7 @@ function chunks:UpdateChunks(player)
     end)
 end
 
+--Terminates the wave instance in the chunk if isActive is false or creates a new wave instance if isActive is true and runs update with that instance
 function chunks.SetActive(isActive, chunk)
     local decal = chunk:FindFirstChild("Decal")
     if isActive and chunk then

@@ -1,6 +1,7 @@
 local shipEvent = game.ReplicatedStorage:WaitForChild("Events").CaptainShip
 local shipInfo = require(game.ReplicatedStorage:WaitForChild("Common").Ship)
 
+--Not really relevant, but this script freezes the player and allows them to control the ship
 shipEvent.OnServerEvent:Connect(function(player, request, ship, input)
 	if request == "SetCaptain" then
 		local pass = shipInfo.ValidateCaptain(player, ship)

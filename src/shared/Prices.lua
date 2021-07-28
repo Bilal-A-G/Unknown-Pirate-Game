@@ -4,6 +4,7 @@ local ships = game.ReplicatedStorage:WaitForChild("Ships")
 local shipInfo = require(game.ReplicatedStorage:WaitForChild("Common").Ship)
 local economyInformation = {}
 
+--More irrelevant economy information
 economyInformation.Prices = {
 
 	TestShip = 1000,

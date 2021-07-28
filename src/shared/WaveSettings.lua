@@ -10,8 +10,8 @@ local waveSettings = {
             PrimaryWave = {
 
                 Wavelength = 3,
-                Amplitude = 30,
-                Speed = 0.7,
+                Amplitude = 10,
+                Speed = 0.1,
                 WindDirection = Vector2.new(1, 0),
                 Steepness = 0.1,
             },
@@ -19,8 +19,8 @@ local waveSettings = {
             SecondaryWave = {
 
                 Wavelength = 3,
-                Amplitude = 15,
-                Speed = 1,
+                Amplitude = 5,
+                Speed = 0.2,
                 WindDirection = Vector2.new(0.5, 0.5),
                 Steepness = 0.5,
             },
@@ -28,8 +28,8 @@ local waveSettings = {
             TertiaryWave = {
 
                 Wavelength = 10,
-                Amplitude = 25,
-                Speed = 0.6,
+                Amplitude = 15,
+                Speed = 0.1,
                 WindDirection = Vector2.new(0, 1),
                 Steepness = 0.9,
             },
